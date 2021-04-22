@@ -8,7 +8,8 @@
 use Mix.Config
 
 config :parking_lpr,
-  ecto_repos: [ParkingLpr.Repo]
+  ecto_repos: [ParkingLpr.Repo],
+  generators: [binary_id: true]
 
 # Configures the endpoint
 config :parking_lpr, ParkingLprWeb.Endpoint,

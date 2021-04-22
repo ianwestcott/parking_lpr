@@ -13,16 +13,39 @@ defmodule ParkingLprWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :api_auth do
+    plug :ensure_authenticated
+  end
+
   scope "/", ParkingLprWeb do
     pipe_through :browser
 
     get "/", PageController, :index
   end
 
+  # Plug function
+  defp ensure_authenticated(conn, _opts) do
+    # TODO Check authentication token
+    # current_user_id = get_session(conn, :current_user_id)
+    # current_user_id = true
+    # if current_user_id do
+    #   conn
+    # else
+    #   conn
+    #   |> put_status(:unauthorized)
+    #   |> render("401.json", message: "Unauthenticated user")
+    #   |> halt()
+    # end
+    conn
+  end
+
   # Other scopes may use custom stacks.
-  # scope "/api", ParkingLprWeb do
-  #   pipe_through :api
-  # end
+  scope "/events", ParkingLprWeb do
+    pipe_through [:api, :api_auth]
+    # get "/", ApiController, :index
+    # get "/:id", ApiController, :show
+    resources "/", ApiController, only: [:index, :show, :create]
+  end
 
   # Enables LiveDashboard only for development
   #
