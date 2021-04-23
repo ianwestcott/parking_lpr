@@ -1,37 +1,50 @@
 defmodule ParkingLprWeb.ApiController do
   use ParkingLprWeb, :controller
+  alias ParkingLpr.{Repo, Event}
+
+  import Ecto.Query
+
+  # TODO: move ecto operations to seperate file
 
   def index(conn, _params) do
-    # TODO: return all events
-    IO.inspect(conn, label: "conn:")
-    json(conn, %{id: "INDEX"})
+    # IO.inspect(conn, label: "conn:")
+    event_ids = Repo.all(from e in Event, select: e.id)
+    event_count = Repo.one(from e in Event, select: count(e.id))
+    json(conn, %{
+      count: event_count,
+      events: event_ids
+    })
   end
 
+  @spec show(Plug.Conn.t(), map) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
-    # TODO: return event by id param
-    IO.inspect(conn, label: "conn:")
-    json(conn, %{id: id})
+    event = Repo.one(from e in Event, where: e.id == ^id)
+    IO.inspect(event, label: "found: ")
+    json(conn, %{event: event})
   end
 
   @spec create(Plug.Conn.t(), any) :: Plug.Conn.t()
   def create(conn, _params) do
-    # TODO: do something with input
-    # TODO: response
-
     {:ok, body} = Map.fetch(conn, :body_params)
-    IO.inspect(body,label: "body")
+    # IO.inspect(body,label: "body")
 
     Map.fetch(body, "upload")
     |> IO.inspect(label: "upload")
 
     {:ok, data} = Map.fetch(body, "data")
-    IO.inspect(data, label: "data")
+    {:ok, source} = Map.fetch(body, "source")
 
-    {:ok, json}= Jason.decode(data)
-    IO.inspect(json, label: "json")
-    IO.puts(json["frame"]["aspect_ration"])
+    {:ok, json_data}= Jason.decode(data)
+    # IO.inspect(json_data, label: "json")
 
-    json(conn, %{resp: "created thing"})
+    ts = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    {:ok, new_event} = Repo.insert(%Event{
+      source: source,
+      data: json_data,
+      timestamp: ts,
+    })
+    json(conn, %{id: new_event.id})
 
   end
 
