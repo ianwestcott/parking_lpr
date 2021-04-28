@@ -49,7 +49,7 @@ defmodule ParkingLpr.MixProject do
       {:httpoison, "~> 1.8"},
       {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
-      {:hackney, "~> 1.9"}
+      {:hackney, "~> 1.9"},
     ]
   end
 

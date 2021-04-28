@@ -1,12 +1,13 @@
 defmodule ParkingLprWeb.ApiController do
   use ParkingLprWeb, :controller
-  alias ParkingLpr.{Repo, Event}
+  alias ParkingLpr.{Repo, Event, Parkpow}
   require Logger
   import Ecto.Query
 
-  # TODO: move ecto operations to seperate file
   @doc """
   GET /events Retutrns list of all events in database
+
+  # TODO Move below to its own file/class/script
   """
   def index(conn, _params) do
     # Get list of all event IDs
@@ -36,6 +37,7 @@ defmodule ParkingLprWeb.ApiController do
       lpr2 : ...
       ...
     }
+  # TODO Move below to its own file/class/script
   # TODO Fall back in case no image is found
   """
   @spec show(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -44,24 +46,31 @@ defmodule ParkingLprWeb.ApiController do
     Logger.info("GET /events/#{id}: Looking up event")
     event = Repo.one(from e in Event, where: e.id == ^id)
 
+    # Lookup parkpow data
+    Logger.info("GET /events/#{id}: Looking up parkpow")
+    parkpow = Repo.one(from p in Parkpow, where: p.id == ^id)
+
     # Lookup AWS image
     Logger.info("GET /events/#{id}: Looking up AWS image")
-    {:ok, aws_response} = ExAws.S3.get_object(System.get_env("AWS_BUCKET"), "test/#{id}.png")
+    {:ok, aws_response} = ExAws.S3.get_object(System.get_env("AWS_BUCKET"), "#{Mix.env()}/#{id}.png")
     |> ExAws.request()
 
     # Return JSON Object
     Logger.info("GET /events/#{id}: Retuning response")
-    json(conn, %{event: event, image: Base.encode64(aws_response.body)})
+    json(conn, %{
+      event: event,
+      image: Base.encode64(aws_response.body),
+      parkpow: parkpow
+    })
   end
 
   @doc """
   POST /events Adds a event, returns event id
-
+  # TODO Move below to its own file/class/script
   # TODO handle missing upload
   # TODO handle missing data
   # TODO handle un able to parse json data
   # TODO handle missing source
-  # TODO use env variable for AWS object folder
   # TODO deal with different file types, png, jpg, ect...
   """
   @spec create(Plug.Conn.t(), any) :: Plug.Conn.t()
@@ -83,25 +92,56 @@ defmodule ParkingLprWeb.ApiController do
     Logger.info("POST /events: Inserting Event")
     ts = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    {:ok, new_event} = Repo.insert(%Event{
+    case Repo.insert(%Event{
       source: source,
       data: json_data,
       timestamp: ts,
-    })
-    new_event_id = new_event.id
+    }) do
+      {:ok, new_event} ->
+        new_event_id = new_event.id
+
+        # Read binary data from upload
+        Logger.info("POST /events: Reading file binary")
+        {:ok, file_binary} = File.read(upload.path)
+
+        # LPR Cloud Processing
+        Logger.info("POST /events: Sending to ParkPow")
+        pp_key = System.get_env("PARKPOW_KEY")
+        pp_url = System.get_env("PARKPOW_URL")
+        body = {:multipart, [{"upload", Base.encode64(file_binary)}]}
+        pp_ts = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        case HTTPoison.post(pp_url, body, [{"Authorization", pp_key}]) do
+          {:ok, %HTTPoison.Response{body: response_body}} ->
+            {:ok, pp_json_data}= Jason.decode(response_body)
+            Repo.insert(%Parkpow{
+              id: new_event_id,
+              data: pp_json_data,
+              time_sent: pp_ts,
+              time_received: DateTime.utc_now() |> DateTime.truncate(:second)
+            })
+          {:ok, %HTTPoison.Response{status_code: 404}} ->
+            IO.puts "Not found :("
+          {:error, %HTTPoison.Error{reason: reason}} ->
+            IO.puts "ERROR: "
+            IO.inspect reason
+        end
+
+        # Upload image to S3
+        Logger.info("POST /events: Uploading image to S3")
+        ExAws.S3.put_object(System.get_env("AWS_BUCKET"), "#{Mix.env()}/#{new_event_id}.png", file_binary)
+        |> ExAws.request()
+
+        Logger.info("POST /events: Returning response for event #{new_event_id}")
+        json(conn, %{id: new_event_id})
+
+      {:error, changeset} ->
+        Logger.error("Error creating inserting event")
+        json(conn, %{error: changeset})
+
+    end
 
 
-    # Read binary data from upload
-    Logger.info("POST /events: Reading file binary")
-    {:ok, file_binary} = File.read(upload.path)
-
-    # Upload image to S3
-    Logger.info("POST /events: Uploading image to S3")
-    ExAws.S3.put_object(System.get_env("AWS_BUCKET"), "test/#{new_event_id}.png", file_binary)
-    |> ExAws.request()
-
-    Logger.info("POST /events: Returning response for event #{new_event_id}")
-    json(conn, %{id: new_event_id})
   end
 
 end
