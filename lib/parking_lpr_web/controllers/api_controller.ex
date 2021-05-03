@@ -5,7 +5,7 @@ defmodule ParkingLprWeb.ApiController do
 
   def index(conn, _params) do
     json(conn, %{
-      count: Event.count_event(),
+      count: Event.count_events(),
       events: Event.list_event_ids()
     })
   end
@@ -25,10 +25,16 @@ defmodule ParkingLprWeb.ApiController do
   @spec create(Plug.Conn.t(), any) :: Plug.Conn.t()
   def create(conn, _params) do
     {:ok, body_params} = Map.fetch(conn, :body_params)
-    event = Event.add_event(body_params["data"], body_params["source"])
-    conn
-    |> put_status(:created)
-    |> put_resp_header("location", Routes.api_path(conn, :show, event))
-    |> json(event)
+    case Event.add_event(body_params["data"], body_params["source"]) do
+      nil ->
+        conn
+        |> put_status(404)
+        |> json(%{})
+      event ->
+        conn
+        |> put_status(:created)
+        |> put_resp_header("location", Routes.api_path(conn, :show, event))
+        |> json(event)
+    end
   end
 end

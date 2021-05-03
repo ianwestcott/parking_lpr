@@ -54,6 +54,9 @@ defmodule ParkingLpr.Event do
       timestamp: ts,
     })
     new_event
+
+  rescue
+    _-> nil
   end
 
   @doc """
@@ -66,7 +69,7 @@ defmodule ParkingLpr.Event do
   @doc """
     Return number of total Events
   """
-  def count_event() do
-    Repo.all(from e in Event, select: e.id)
+  def count_events() do
+    Repo.one(from e in Event, select: count(e.id))
   end
 end
