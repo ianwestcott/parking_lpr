@@ -4,7 +4,7 @@ defmodule ParkingLprWeb.ApiControllerTest do
   alias ParkingLprWeb.Endpoint
 
   @create_attrs %{
-    data: Jason.encode(%{test: "data"}) |> elem(1),
+    data: %{test: "data"} |> Jason.encode() |> elem(1),
     source: "ipsum"
   }
 
@@ -18,7 +18,7 @@ defmodule ParkingLprWeb.ApiControllerTest do
   describe "show" do
     test "Get event with invalid id", %{conn: conn} do
       conn = get(conn, Routes.api_path(conn, :show, "123"))
-      assert %{} = json_response(conn, 404)
+      assert %{"error"=> "Elixir.Ecto.Query.CastError"} = json_response(conn, 404)
     end
   end
 

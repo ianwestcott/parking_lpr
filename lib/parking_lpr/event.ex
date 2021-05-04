@@ -36,29 +36,27 @@ defmodule ParkingLpr.Event do
   def get_event(id) do
     Repo.one(from e in Event, where: e.id == ^id)
   rescue
-    Ecto.Query.CastError -> nil
+    Ecto.Query.CastError -> Ecto.Query.CastError
   end
 
   @doc """
     Creates an Event in the DB from body_params
   """
   def add_event(data, source) do
-
-    {:ok, json_data}= Jason.decode(data)
-
     ts = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    {:ok, new_event} = Repo.insert(%Event{
-      source: source,
-      data: json_data,
-      timestamp: ts,
-    })
-    new_event
-
-  rescue
-    _-> nil
+    if data == nil do
+      Repo.insert(%Event{ source: source, data: nil, timestamp: ts})
+    else
+      case Jason.decode(data) do
+        {:ok, json_data} ->
+          Repo.insert(%Event{ source: source, data: json_data, timestamp: ts})
+        {:error, e} ->
+          {:error, e}
+      end
+    end
   end
 
+  @spec list_event_ids :: any
   @doc """
     Returns list of Event ids
   """

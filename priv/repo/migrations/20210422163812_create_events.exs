@@ -6,7 +6,7 @@ defmodule ParkingLpr.Repo.Migrations.CreateEvents do
       add :id, :binary_id, primary_key: true
       add :source, :string
       add :data, :map
-      add :timestamp, :utc_datetime
+      add :timestamp, :utc_datetime, :null, false
 
       timestamps()
     end

@@ -13,12 +13,12 @@ defmodule ParkingLprWeb.ApiController do
   @spec show(Plug.Conn.t(), map) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
     case Event.get_event(id) do
-      nil ->
+      Ecto.Query.CastError ->
         conn
         |> put_status(404)
-        |> json(%{})
-      id ->
-        json(conn,id)
+        |> json(%{error: Ecto.Query.CastError})
+      e ->
+        json(conn,e)
     end
   end
 
@@ -26,11 +26,11 @@ defmodule ParkingLprWeb.ApiController do
   def create(conn, _params) do
     {:ok, body_params} = Map.fetch(conn, :body_params)
     case Event.add_event(body_params["data"], body_params["source"]) do
-      nil ->
+      {:error, e} ->
         conn
         |> put_status(404)
-        |> json(%{})
-      event ->
+        |> json(%{error: e})
+      {:ok, event} ->
         conn
         |> put_status(:created)
         |> put_resp_header("location", Routes.api_path(conn, :show, event))
