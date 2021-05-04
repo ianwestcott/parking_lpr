@@ -28,7 +28,7 @@ defmodule ParkingLpr.Event do
   def changeset(event, attrs) do
     event
     |> cast(attrs, [:source, :data, :timestamp])
-    |> validate_required([:source, :data, :timestamp])
+    |> validate_required([:timestamp])
   end
   @doc """
     Given an Event identifier returns Event
