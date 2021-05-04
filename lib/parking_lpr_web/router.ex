@@ -15,14 +15,14 @@ defmodule ParkingLprWeb.Router do
 
   scope "/", ParkingLprWeb do
     pipe_through :browser
-
     get "/", PageController, :index
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", ParkingLprWeb do
-  #   pipe_through :api
-  # end
+  scope "/events", ParkingLprWeb do
+    pipe_through [:api]
+    resources "/", ApiController, only: [:index, :show, :create]
+  end
 
   # Enables LiveDashboard only for development
   #
