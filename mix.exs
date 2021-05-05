@@ -45,7 +45,9 @@ defmodule ParkingLpr.MixProject do
       {:gettext, "~> 0.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
-      {:cors_plug, "~> 2.0"}
+      {:cors_plug, "~> 2.0"},
+      {:ex_aws, "~> 2.1"},
+      {:ex_aws_s3, "~> 2.0"}
     ]
   end
 
