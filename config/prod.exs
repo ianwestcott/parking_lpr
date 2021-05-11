@@ -16,6 +16,10 @@ config :parking_lpr, ParkingLprWeb.Endpoint,
 # Do not print debug messages in production
 config :logger, level: :info
 
+config :parking_lpr,
+  run_migrations_at_startup?: true,
+  ex_aws_requester: {ExAws, :request}
+
 # ## SSL Support
 #
 # To get SSL working, you will need to add the `https` key
@@ -52,4 +56,4 @@ config :logger, level: :info
 
 # Finally import the config/prod.secret.exs which loads secrets
 # and configuration from environment variables.
-import_config "prod.secret.exs"
+# import_config "prod.secret.exs"
